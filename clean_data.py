@@ -85,7 +85,6 @@ def clean_data_by_rows(df, sheet_name):
                 r_df = r_df.append([pd.DataFrame(row).T])
             else:
                 print(sheet_name + "is Missing: " + target_country[i])
-
     return wash_the_unused_col(r_df)
 
 
@@ -131,7 +130,7 @@ def clean_data_by_name(df, sheet_name, target=("WC_rights", "COORD", "25_34", "P
                     all_data[country_name][1].append(val)
                 else:
                     all_data[country_name] = [[yr], [val]]
-    return reformat_dict_to_df(all_data)
+    return reformat_dict_to_df(all_data, target_country)
 
 
 def interpolation_data():
@@ -147,7 +146,7 @@ def get_pos_helper(df):
     return title.index("Time"), title.index("Subject"), title.index("Value")
 
 
-def reformat_dict_to_df(all_data):
+def reformat_dict_to_df(all_data, target_country):
     all_year = [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
                 2017, 2018]
     for country in all_data:
@@ -155,9 +154,13 @@ def reformat_dict_to_df(all_data):
             if all_year[i] not in all_data[country][0]:
                 all_data[country][0].insert(i, all_year[i])
                 all_data[country][1].insert(i, float("nan"))
-    for country in all_data:
-        all_data[country] = all_data[country][1]
-
+    temp = {}
+    for country in target_country:
+        if country not in all_data:
+            temp[country] = [float("NaN")] * len(all_year)
+        else:
+            temp[country] = all_data[country][1]
+    all_data = temp
     df_new = pd.DataFrame.from_dict(all_data, orient="index", columns=all_year)
     df_new.insert(0, "Country", df_new.index)
     return df_new
@@ -186,7 +189,6 @@ def wash_the_unused_col(df):
     df.columns = titles
     all_year = [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016,
                 2017, 2018]
-    missing_yrs = []
 
     # Filtering the columns that is unnecessary.
     for i in range(1, len(titles)):
@@ -202,8 +204,15 @@ def wash_the_unused_col(df):
     # Adding the missing year to the column
     for i in range(len(all_year)):
         if str(all_year[i]) not in df:
-            df.insert(i+1, str(all_year[i]), [""]*len(df[df.columns.ravel().tolist()[0]]))
+            df.insert(i+1, str(all_year[i]), ["NaN"]*len(df[df.columns.ravel().tolist()[0]]))
     return df
+
+
+def sort_dict_order(df, all_country):
+    r_dict = {}
+    for country in all_country:
+        r_dict[country] = df[country]
+    return r_dict
 
 
 if __name__ == "__main__":
