@@ -1,0 +1,70 @@
+---
+title: "fsqca"
+author: "Jinhan Mei"
+date: "2020/7/14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(LaplacesDemon)
+library(QCA)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+data12 = read.csv('2007.csv',1)
+# data12 = subset(data12,Year == 2012)
+data12 = data12[,-c(1,2)]
+data12 = data12[which(data12$Country.Type != 0),]
+data12$Country.Type[data12$Country.Type == -1] = 0
+data12[,c(4:15)] = invlogit(data12[,c(4:15)])
+data12[,c(4:15)] = round(data12[,c(4:15)],digits = 2)
+data12 = t(data12)
+
+write.csv(data12,'data12.csv')
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+i = 17
+data12 = read.csv('2007.csv',1)
+
+
+temp = data.matrix(data12[i])
+
+temp[7]
+(temp[7]+temp[16])/2
+temp[16]
+cx <- calibrate(temp, thresholds = "e=9.5, c= 9.952862, i=10.40572")
+
+data12[i] = as.data.frame(cx)
+
+write.csv(data12,'2007.csv')
+
+plot(temp, cx, main="Binary crisp set using 1 threshold",
+xlab = "Raw data", ylab = "Calibrated data", yaxt="n")
+axis(2, at = 0:1)
+#data12[,c(16)] = calibrate(data12[4], type="fuzzy")
+```
+```{r}
+set.seed(12345)
+x <- rnorm(n = 100, mean = 175, sd = 10)
+class(x)
+cx <- calibrate(x, thresholds = "e=165, c=175, i=185")
+plot(x, cx, main="Binary crisp set using 1 threshold",
+xlab = "Raw data", ylab = "Calibrated data", yaxt="n")
+axis(2, at = 0:1)
+```
+```{r}
+runGUI()
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

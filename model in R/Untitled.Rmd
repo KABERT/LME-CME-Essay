@@ -1,0 +1,62 @@
+---
+title: "Analyzing indicator log regression"
+author: "Jinhan Mei"
+date: "2020/7/16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+
+library(ggplot2)
+
+library(Hmisc)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+mydata = read.csv("2007.csv", 1)
+
+
+mydata = mydata[,-c(1)]
+
+mylogit <- logistf(formula = Country.Type ~ Collective.Bargaining.Coverage + Size.of.Stock.Market + Unemployment.Protection  , data = mydata, family = "binomial")
+
+#summary(mylogit)
+vif(model)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+all_data = read.csv("all in one excel.csv", 1)[,-c(1,2,3,4)]
+
+res <- cor(all_data, use="complete.obs")
+res <- round(res, 2)
+# ++++++++++++++++++++++++++++
+# flattenCorrMatrix
+# ++++++++++++++++++++++++++++
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+# flattenCorrMatrix <- function(cormat, pmat) {
+#   ut <- upper.tri(cormat)
+#   data.frame(
+#     row = rownames(cormat)[row(cormat)[ut]],
+#     column = rownames(cormat)[col(cormat)[ut]],
+#     cor  =(cormat)[ut],
+#     p = pmat[ut]
+#     )
+# }
+# 
+# res2<-rcorr(as.matrix(all_data))
+# temp<-flattenCorrMatrix(res2$r, res2$P)
+write.csv(res,'correlation.csv')
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
