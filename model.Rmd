@@ -1,0 +1,64 @@
+---
+title: "Analyzing indicator log regression"
+author: "Jinhan Mei"
+date: "2020/7/16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(logistf)
+library(Hmisc)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+# logistic regression for all indicators
+
+mydata = read.csv("data/all in one excel.csv", 1)[,-c(1,2,3)]
+
+for (i in seq(2, length(names(mydata)))){
+  fmla <- as.formula(paste(c(names(mydata)[1], names(mydata)[i]), collapse=' ~ ' ))
+  mylogit <- logistf(formula = fmla, data = mydata, family = "binomial")
+  summary(mylogit)
+}
+```
+
+```{r}
+# ++++++++++++++++++++++++++++
+# flattenCorrMatrix
+# ++++++++++++++++++++++++++++
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+```
+
+```{r}
+# Get the correlation matrix of all data.
+mydata = read.csv("data/all in one excel.csv", 1)[,-c(1,2,3)]
+```
+
+```{r}
+res2 <- rcorr(as.matrix(mydata))$P
+# res2<-flattenCorrMatrix(res2$r, res2$P)
+write.csv(res2, "correlation.csv")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
