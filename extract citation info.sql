@@ -21,8 +21,9 @@
 
 
 select 
-	t1.appln_id, t4.st3_name, t1.earliest_filing_year, substring(t9.ipc_class_symbol, 1, 1), c.cited1, c.cited2, c.cited3, c.cited4, c.cited5, c.cited6, c.cited7, c.cited8,
-	 c.citing1, c.citing2, c.citing3, c.citing4, c.citing5, c.citing6, c.citing7, c.citing8
+	t1.appln_id, t4.st3_name, t1.earliest_filing_year, substring(t9.ipc_class_symbol, 1, 1),
+	c.cited1, c.cited2, c.cited3, c.cited4, c.cited5, c.cited6, c.cited7, c.cited8,
+	c.citing1, c.citing2, c.citing3, c.citing4, c.citing5, c.citing6, c.citing7, c.citing8
 from
 	tls201_appln t1, tls801_country t4, tls209_appln_ipc t9, tls211_pat_publn t11,
 
@@ -83,8 +84,6 @@ group by
 	b1.pat_publn_id) as c
 
 where
-		t1.appln_id = t11.appln_id
-    and
 		t1.appln_auth = t4.ctry_code
 	and
 		t1.appln_id = t9.appln_id
@@ -95,4 +94,11 @@ where
 	and 
 		t1.appln_auth in ('AT', 'AU', 'BE', 'CA', 'CH', 'DE', 'DK', 'FI', 'GB', 'IE', 'JP', 'NL', 'NO', 'NZ', 'SE', 'US')
     and
+    	t1.appln_id = t11.appln_id
+    and
     	t11.pat_publn_id = c.pat_publn_id
+
+group by
+	t1.appln_id, t4.st3_name, t1.earliest_filing_year, substring(t9.ipc_class_symbol, 1, 1), c.cited1, c.cited2, c.cited3,
+	c.cited4, c.cited5, c.cited6, c.cited7, c.cited8, c.citing1, c.citing2, c.citing3, c.citing4, c.citing5, c.citing6,
+	c.citing7, c.citing8
