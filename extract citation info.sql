@@ -1,8 +1,30 @@
+--- This is a script use for extracting the number of citations of patents of 16 LME CME countries.
+--- The script is used for EPO PATSTAT databse, 2020 Spring Edition.
+
+--- The script will give a table include the number of forward citation and backward citation of a patent
+--- in  the 8 international patent classification (ipc) clasees. The patent we are looking for has to be 
+--- granted, and the registered in bwtween 2000-2019, and is typical LMEs and CMEs.
+
+
+--- The output will be used for the measuring the radicalty of innocations of a country as following. The method
+--- is used according to 2009 Akkremans, et al.
+
+
+
+--- Work for 2020 Yuzhou Liu's Paper,
+
+
+--- Code by Jinhan Mei
+--- 2020.08.08 @ Beijing
+
+
+
+
 select 
-	t1.appln_id, t4.st3_name, t1.earliesy_filing_year, substring(t9.ipc_class_symbol, 1, 1), c.cited1, c.cited2, c.cited3, c.cited4, c.cited5, c.cited6, c.cited7, c.cited8,
+	t1.appln_id, t4.st3_name, t1.earliest_filing_year, substring(t9.ipc_class_symbol, 1, 1), c.cited1, c.cited2, c.cited3, c.cited4, c.cited5, c.cited6, c.cited7, c.cited8,
 	 c.citing1, c.citing2, c.citing3, c.citing4, c.citing5, c.citing6, c.citing7, c.citing8
 from
-	tls201_appln t1, tls801_country t4, tls209_appln_ipc t9, 
+	tls201_appln t1, tls801_country t4, tls209_appln_ipc t9, tls211_pat_publn t11,
 
 (select
 b1.pat_publn_id,
@@ -60,15 +82,17 @@ from
 group by 
 	b1.pat_publn_id) as c
 
-where 
+where
+		t1.appln_id = t11.appln_id
+    and
 		t1.appln_auth = t4.ctry_code
 	and
 		t1.appln_id = t9.appln_id
 	and 
 		t1.granted = 'Y'
 	and 
-		t1.appln_id=c.pat_publn_id 
-	and 
-		(t1.earliesy_filing_year between 2000 and 2019)
+		(t1.earliest_filing_year between 2000 and 2019)
 	and 
 		t1.appln_auth in ('AT', 'AU', 'BE', 'CA', 'CH', 'DE', 'DK', 'FI', 'GB', 'IE', 'JP', 'NL', 'NO', 'NZ', 'SE', 'US')
+    and
+    	t11.pat_publn_id = c.pat_publn_id
