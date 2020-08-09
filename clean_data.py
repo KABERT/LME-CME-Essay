@@ -1,12 +1,14 @@
 import pandas as pd
 from openpyxl import load_workbook
 
+
 clean_by_row_lst = ['Collective Bargaining Coverage', "Employment Length < 1yr", "Employment Protection", ]
 
 
 def get_country_info(path="data/target country.xlsx"):
     df = pd.read_excel(path)
-    target_country_name, target_country_code, target_country_type = get_country_name(df), get_country_code(df), get_country_type(df)
+    target_country_name, target_country_code, target_country_type = get_country_name(df), get_country_code(df), \
+                                                                    get_country_type(df)
     return target_country_name, target_country_code, target_country_type
 
 
@@ -50,9 +52,9 @@ def clean_all_data(input_path="data/DD_T2_Five_Spheres_All_in_One.xlsx", output_
         if "Time" not in df_curr.columns.ravel().tolist():
             df_collection.append(clean_data_by_rows(df_curr, sheets[i]))
         else:
+            print(sheets[i])
             df_collection.append(clean_data_by_name(df_curr, sheets[i]))
     write_df_to_excel(df_collection, output_path, sheets)
-
 
 
 def clean_data_by_rows(df, sheet_name):
@@ -112,7 +114,7 @@ def clean_data_by_name(df, sheet_name, target=("WC_rights", "COORD", "25_34", "P
     for i in range(len(country_in_df)):
         if not is_code:
             # Extract the code that is wanted
-            if country_in_df[i] in target_country and df.iloc[i].tolist()[objective_pos] in target and\
+            if country_in_df[i] in target_country and df.iloc[i].tolist()[objective_pos] in target and \
                     2000 <= df.iloc[i][yr_pos] <= 2018:
                 yr, val = df.iloc[i][yr_pos], df.iloc[i][val_pos]
                 if country_in_df[i] in all_data:
@@ -121,7 +123,7 @@ def clean_data_by_name(df, sheet_name, target=("WC_rights", "COORD", "25_34", "P
                 else:
                     all_data[country_in_df[i]] = [[yr], [val]]
         else:
-            if country_in_df[i] in target_code and df.iloc[i].tolist()[objective_pos] in target and\
+            if country_in_df[i] in target_code and df.iloc[i].tolist()[objective_pos] in target and \
                     2000 <= df.iloc[i][yr_pos] <= 2018:
                 country_name = target_country[target_code.index(country_in_df[i])]
                 yr, val = df.iloc[i][yr_pos], df.iloc[i][val_pos]
@@ -133,8 +135,10 @@ def clean_data_by_name(df, sheet_name, target=("WC_rights", "COORD", "25_34", "P
     return reformat_dict_to_df(all_data, target_country)
 
 
-def interpolation_data():
+def interpolation_data(df):
     pass
+
+
 
 
 def plot_data():
@@ -153,7 +157,7 @@ def reformat_dict_to_df(all_data, target_country):
         for i in range(len(all_year)):
             if all_year[i] not in all_data[country][0]:
                 all_data[country][0].insert(i, all_year[i])
-                all_data[country][1].insert(i, float("nan"))
+                all_data[country][1].insert(i, float("NaN"))
     temp = {}
     for country in target_country:
         if country not in all_data:
@@ -204,7 +208,7 @@ def wash_the_unused_col(df):
     # Adding the missing year to the column
     for i in range(len(all_year)):
         if str(all_year[i]) not in df:
-            df.insert(i+1, str(all_year[i]), ["NaN"]*len(df[df.columns.ravel().tolist()[0]]))
+            df.insert(i + 1, str(all_year[i]), [float("NaN")] * len(df[df.columns.ravel().tolist()[0]]))
     return df
 
 
