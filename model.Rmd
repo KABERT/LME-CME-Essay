@@ -16,16 +16,22 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
+```{r cars, echo=FALSE}
 # logistic regression for all indicators
 
 mydata = read.csv("data/all in one excel.csv", 1)[,-c(1,2,3)]
 
-for (i in seq(2, length(names(mydata)))){
-  fmla <- as.formula(paste(c(names(mydata)[1], names(mydata)[i]), collapse=' ~ ' ))
-  mylogit <- logistf(formula = fmla, data = mydata, family = "binomial")
-  summary(mylogit)
-}
+
+fmla <- as.formula(paste(c(names(mydata)[1], names(mydata)[14]), collapse=' ~ ' ))
+mylogit <- glm(formula = fmla, data = mydata, family = "binomial")
+summary(mylogit)
+
+
+# for (i in seq(2, length(names(mydata)))){
+#   fmla <- as.formula(paste(c(names(mydata)[1], names(mydata)[2]), collapse=' ~ ' ))
+#   mylogit <- glm(formula = fmla, data = mydata, family = "binomial")
+#   summary(mylogit)
+# }
 ```
 
 ```{r}

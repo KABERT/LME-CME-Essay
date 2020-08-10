@@ -77,7 +77,33 @@ def check_under_threshold_patent(path="data/patent count by country yr and class
     print(total)
 
 
+def gather_number_of_patent_through_years(country, patent_class, path="data/patent count by country yr and class.csv"):
+    df = pd.read_csv(path, sep=";")
+    titles = df.columns.ravel().tolist()
+    dict = {}
+    for i in range(len(df[titles[0]])):
+        if df[titles[0]][i] == country and df[titles[2]][i] == patent_class:
+            dict[df[titles[1]][i]] = df[titles[-1]][i]
+    print(dict)
+
+
+def count_total_patent_by_class_given_yr(yr, path="data/patent count by country yr and class.csv"):
+    df = pd.read_csv(path, sep=";")
+    titles = df.columns.ravel().tolist()
+    dict = {}
+    for i in range(len(df[titles[0]])):
+        if df[titles[1]][i] == yr:
+            p_class = df[titles[2]][i]
+            if p_class not in dict:
+                dict[p_class] = df[titles[-1]][i]
+            else:
+                dict[p_class] += df[titles[-1]][i]
+    print(dict)
+
+
 if __name__ == "__main__":
     # check_countries_application("/Users/jinhanmei/Desktop/PATSTAT_Sample_2018Autumn_Global_CSV/tls201_appln.csv")
     # check_duplicated_class()
-    check_under_threshold_patent()
+    # check_under_threshold_patent()
+    # gather_number_of_patent_through_years("United States of America", "D")
+    count_total_patent_by_class_given_yr(2000)
