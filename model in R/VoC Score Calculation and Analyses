@@ -1,0 +1,235 @@
+rm(list = ls())
+library(readxl)
+library(dplyr)
+library(Hmisc)
+library(mice)
+library(ggplot2)
+library(plm)
+
+#***************************************************
+## Part 1 clean data 
+X <- read_excel("D:..../Part1-Data.xlsx") #file path
+X = dplyr::filter(X,`CountryType`!= 0)
+Hmisc::describe(X)
+MissRate <-function(x){
+  sum(is.na(x)/length(x))*100
+}
+apply(X,2,MissRate)
+temp = X[,-c(4,11,12,16)] #drop indicators with high missing rate
+Hmisc::describe(temp)
+apply(temp,2,MissRate)
+imp = mice(temp,method = "pmm",seed=2000) #interpolation
+X0 = complete(imp)
+md.pattern(X0)
+
+
+# the type of indicator--LME>CME | CME > LME
+# CME<LME -- M&A Market Capitalisation Tertiary Employment Length < 1yr
+# set CME > LME as positive direction
+indextype = c(1,5,6,7)
+
+X2=X0[,-(1:3)]
+m = dim(X2)[1]
+n = dim(X2)[2]
+
+# normalization
+R = matrix(nrow = m , ncol = n) 
+for (i in 1:n){
+  a = as.vector(unlist(X2[i]))
+  if (i %in% indextype){
+    b=(0.999-0.001)*( max(a)-a)/(max(a)-min(a))+0.001
+  } else{
+    b=(0.999-0.001)*( a-min(a))/(max(a)-min(a))+0.001
+  }
+  R[,i] = b
+}
+
+W = matrix(nrow = m, ncol = n) 
+for (i in 1:n){
+  for (j in 1:m){
+    W[j,i]=R[j,i]/sum(R[,i])
+  }
+}
+
+E = vector()
+for (i in 1:n){
+  sum = 0
+  for (j in 1:m){
+    sum = sum + W[j,i]*log(W[j,i])
+  }
+  E[i] = -1/log(m)*sum
+}
+
+S1 = E[c(1,2,3,8)] #industrial relation
+W1 = (1-S1)/(length(S1)-sum(S1))
+S2 = E[4:5] #vocational training and edu
+W2 = (1-S2)/(length(S2)-sum(S2))
+S3 = E[6] #Corporate Governace
+S4 = E[7] # Inter-firm Relations
+S5 = E[9] # own employment
+
+XR = data.frame(R)
+X3 = X0
+X3[,4:12] = XR
+X4 = X3[,c(1,2,3,4,5,9,10,12)]
+names(X4)[4:8]<-c("Indus","Edu","CorGov","InterFirm","Employ")
+X4[,4]= X3[,4]*W1[1]+X3[,5]*W1[2]+X3[,6]*W1[3]+X3[,11]*W1[4]
+X4[,5]= X3[,7]*W2[1]+X3[,8]*W2[2]
+
+## Part 3 Calculate index of VoC based on 5 spheres
+
+#Part 3.1 Method 1: sum
+X4[,9]=X4[,4]+X4[,5]+X4[,6]+X4[,7]+X4[,8]
+for (i in 1:dim(X4)[1]){
+  if (X4[i,2]==2003){
+    X4[i,10]=1
+  }else{X4[i,10]=0}
+  if (X4[i,2]==2008){
+    X4[i,11]=1
+  }else{X4[i,11]=0}
+  X4[i,2]=X4[i,2]-1999
+}
+X4[,12]=X4[,4]+X4[,5]+X4[,7]+X4[,8]
+names(X4)[9:12]<-c("VoCScore","D2003","D2008","ScoreNoStock")
+#write.csv(X4,"D:/Score.csv")
+
+cor.test(X4$CountryType,X4$VoCScore,method = "pearson")
+summary(lm(CountryType~VoCScore, data =X4))
+ggplot(data =X4, mapping =aes(x=Year, y=VoCScore,group=Country,colour=CountryType)) + geom_line()
+
+m0 = lm(VoCScore~Year+Country, data =X4)
+summary(m0)
+
+X41 = dplyr::filter(X4,`CountryType`== 1) #LME Group
+m1 = lm(VoCScore~Year+Country, data =X41)
+summary(m1)
+#summary(lm(VoCScore~Year+Country+D2003+D2008, data =X41))
+#ggplot(data =X41, mapping =aes(x=Year, y=VoCScore,group=Country)) + geom_line()
+
+
+X42 = dplyr::filter(X4,`CountryType`!= 1) #CME Group
+m2 = lm(VoCScore~Year+Country, data =X42)
+summary(m2)
+#ggplot(data =X42, mapping =aes(x=Year, y=VoCScore,group=Country)) + geom_line()
+#summary(lm(VoCScore~Year+Country+D2003+D2008, data =X42))
+
+#-----------Robustness test:Score without Size of Stock Market
+cor.test(X4$CountryType,X4$ScoreNoStock,method = "pearson")
+summary(lm(CountryType~ScoreNoStock, data =X4))
+ggplot(data =X4, mapping =aes(x=Year, y=ScoreNoStock,group=Country,colour=CountryType)) + geom_line()
+
+m20 = lm(ScoreNoStock~Year+Country, data =X4)
+summary(m20)
+
+m21 = lm(ScoreNoStock~Year+Country, data =X41)
+summary(m21)
+#summary(lm(ScoreNoStock~Year+Country+D2003+D2008, data =X41))
+#ggplot(data =X41, mapping =aes(x=Year, y=ScoreNoStock,group=Country)) + geom_line()
+
+m22 = lm(ScoreNoStock~Year+Country, data =X42)
+summary(m22)
+#ggplot(data =X42, mapping =aes(x=Year, y=ScoreNoStock,group=Country)) + geom_line()
+#summary(lm(ScoreNoStock~Year+Country+D2003+D2008, data =X42))
+#-------------------------------------------------------------
+
+#Regression with each sphere index
+summary(lm(Indus~Year+Country, data =X4))
+summary(lm(Indus~Year+Country, data =X41))
+summary(lm(Indus~Year+Country, data =X42))
+
+summary(lm(Edu~Year+Country, data =X4))
+summary(lm(Edu~Year+Country, data =X41))
+summary(lm(Edu~Year+Country, data =X42))
+
+summary(lm(CorGov~Year+Country, data =X4))
+summary(lm(CorGov~Year+Country, data =X41))
+summary(lm(CorGov~Year+Country, data =X42))
+
+summary(lm(InterFirm~Year+Country, data =X4))
+summary(lm(InterFirm~Year+Country, data =X41))
+summary(lm(InterFirm~Year+Country, data =X42))
+
+summary(lm(Employ~Year+Country, data =X4))
+summary(lm(Employ~Year+Country, data =X41))
+summary(lm(Employ~Year+Country, data =X42))
+
+##########################################
+#    Part 3.2 Method 2: entropy
+##############################################
+X5=X4[,4:8]
+m = dim(X5)[1]
+n = dim(X5)[2]
+
+# normalization
+R = matrix(nrow = m , ncol = n) 
+for (i in 1:n){
+  a = as.vector(unlist(X5[i]))
+  b=(0.999-0.001)*( a-min(a))/(max(a)-min(a))+0.001
+  R[,i] = b
+}
+W = matrix(nrow = m, ncol = n) 
+for (i in 1:n){
+  for (j in 1:m){
+    W[j,i]=R[j,i]/sum(R[,i])
+  }
+}
+E = vector()
+for (i in 1:n){
+  sum = 0
+  for (j in 1:m){
+    sum = sum + W[j,i]*log(W[j,i])
+  }
+  E[i] = -1/log(m)*sum
+}
+
+Weight1 = (1-E)/(length(E)-sum(E))
+Weight2 = (1-E[-3])/(length(E[-3])-sum(E[-3]))
+  
+XR = data.frame(R)
+X6 = X4
+X6[,4:8] = XR
+X6[,9] = 0
+for (i in 1:5){
+  X6[,9]=X6[,9]+X6[,i+3]*Weight1[i]*Weight2[i]
+}
+X6[,12]=X6[,4]*Weight2[1]+X6[,5]*Weight2[2]+X6[,7]*Weight2[3]+X6[,8]*Weight2[4]
+
+#analysis
+cor.test(X6$CountryType,X6$VoCScore,method = "pearson")
+summary(lm(CountryType~VoCScore, data =X6))
+ggplot(data =X6, mapping =aes(x=Year, y=VoCScore,group=Country,colour=CountryType)) + geom_line()
+
+m0 = lm(VoCScore~Year+Country, data =X6)
+summary(m0)
+
+X61 = dplyr::filter(X6,`CountryType`== 1) #LME Group
+m1 = lm(VoCScore~Year+Country, data =X61)
+summary(m1)
+#summary(lm(VoCScore~Year+Country+D2003+D2008, data =X61))
+#ggplot(data =X61, mapping =aes(x=Year, y=VoCScore,group=Country)) + geom_line()
+
+
+X62 = dplyr::filter(X6,`CountryType`!= 1) #CME Group
+m2 = lm(VoCScore~Year+Country, data =X62)
+summary(m2)
+#ggplot(data =X62, mapping =aes(x=Year, y=VoCScore,group=Country)) + geom_line()
+#summary(lm(VoCScore~Year+Country+D2003+D2008, data =X62))
+
+#-----------Robustness test:Score without Size of Stock Market
+cor.test(X6$CountryType,X6$ScoreNoStock,method = "pearson")
+summary(lm(CountryType~ScoreNoStock, data =X6))
+ggplot(data =X6, mapping =aes(x=Year, y=ScoreNoStock,group=Country,colour=CountryType)) + geom_line()
+
+m20 = lm(ScoreNoStock~Year+Country, data =X6)
+summary(m20)
+
+m21 = lm(ScoreNoStock~Year+Country, data =X61)
+summary(m21)
+#summary(lm(ScoreNoStock~Year+Country+D2003+D2008, data =X61))
+#ggplot(data =X41, mapping =aes(x=Year, y=ScoreNoStock,group=Country)) + geom_line()
+
+m22 = lm(ScoreNoStock~Year+Country, data =X62)
+summary(m22)
+#ggplot(data =X62, mapping =aes(x=Year, y=ScoreNoStock,group=Country)) + geom_line()
+#summary(lm(ScoreNoStock~Year+Country+D2003+D2008, data =X62))
+#-------------------------------------------------------------
